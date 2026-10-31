@@ -1,6 +1,6 @@
 Incremental steps of project setup :
- init_database.sql -> ddl_bronze.sql -> proc_load_bronze.sql -> ddl_silver.sql -> proc_load_silver.sql -> quality_checks_silver.sql ->ddl_gold.sql ->quality_checks_gold.sql
-
+ init_database.sql -> ddl_bronze.sql -> proc_load_bronze.sql -> ddl_silver.sql -> proc_load_silver.sql -> quality_checks_silver.sql ->ddl_gold.sql 
+		   ->quality_checks_gold.sql -> eda_gold.sql ->reports_customers_gold.sql -> reports_products_gold.sql
 =========================================================================================================================================================================================
 1. IF OBJECT_ID('bronze.crm_cust_info', 'U') IS NOT NULL -----------check if object exist in database is not null, object type - "U" means that its user defined table
 	DROP TABLE bronze.crm_cust_info; ------------ if there are rows then drop table then create otherwise error
@@ -20,9 +20,25 @@ Incremental steps of project setup :
 4.SET @end_time = GETDATE();
 PRINT '>> Load Duration:'+CAST(DATEDIFF(second,@start_time,@end_time) AS NVARCHAR)+'seconds';
 =========================================================================================================================================================================================
+4. Instead of using YEAR(order_date), MONTH(order_date) fn in seperate col, 
+   >>>use DATETRUNC() ->rounds a date or timestamp to a specified date part
+=========================================================================================================================================================================================
 5. COALESCE(ca.gen, 'n/a') ------- if the expression is null then fill by 'n/a' otherwise return the first expression
 =========================================================================================================================================================================================
 6.when creating a new dimension, alaways add a primary key which is called surrogate keys -- system generated unique identifier assigned to each record in table
 use the dimension's surrogate keys to connect facts with dimensions
 =========================================================================================================================================================================================
+7. If data type is not a number => Dimension
+   If data type is a number but doesn't make sense to aggregate => Dimension
+   If data type is a number but makes sense to aggregate => Measure 
 =========================================================================================================================================================================================
+8.It was returning zero b/c of int type : (total_sales/SUM(total_sales) OVER())*100 AS sales_percent
+  so change type to float to get decimals :(CAST(total_sales AS FLOAT)/SUM(total_sales) OVER())*100 AS sales_percent
+=========================================================================================================================================================================================
+9.steps to build report : 
+	->left join of dimensions by fact 
+	->filter data 
+	(since we have complex queries, we divide the process into multiple steps which is called Base quaery, we put multiple steps into CTE with few transformations 
+	 within CTE)
+	->Put multiple select statements into CTE and do basic transformation(if needed)
+==========================================================================================================================================
